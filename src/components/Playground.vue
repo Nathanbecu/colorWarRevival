@@ -66,6 +66,7 @@ export default {
       boxes: [],
       htmlPlayground: "",
       teamVelocity: {},
+      teamFood: {},
       pile: [],
       year: 0,
       turnCount: 0,
@@ -111,6 +112,7 @@ export default {
     launchGame() {
       const teams = ["Yellow", "Green", "Red", "Blue"]
       teams.sort(() => 0.5 - Math.random());
+
       let boxUpLeft = this.findBoxObject(1, 1);
       let boxUpRight = this.findBoxObject(gameWidth, 1);
       let boxDownLeft = this.findBoxObject(1, gameHeight);
@@ -123,6 +125,7 @@ export default {
 
       this.generateGrid()
       this.initializeVelocity(teams);
+      this.initializeFood(teams);
 
       this.play();
 
@@ -219,7 +222,14 @@ export default {
     initializeVelocity(teams: string[]) {
       teams.forEach((team) => this.teamVelocity[team] = 0)
     },
+    initializeFood(teams: string[]) {
+      teams.forEach((team) => this.teamVelocity[team] = 100)
+    },
     play() {
+      //
+      // KNOW WHICH TEAM WILL PLAY IN WHICH ORDER
+      //
+
       // We create a temporary array to make sure all team plays during  a turn
       let uniqueTeam = [];
       while (uniqueTeam.length !== numberOfTeam) {
@@ -245,6 +255,9 @@ export default {
           })
         }
 
+        //
+        // DO ACTIONS TEAMS NEED TO DO
+        //
 
 
 
