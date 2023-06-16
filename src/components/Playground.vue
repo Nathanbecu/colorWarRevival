@@ -91,17 +91,21 @@ export default {
       }
     },
     generateGrid() {
-      let html = "";
-      this.boxes.forEach(function (box) {
-        let rowStart = box.col;
-        let columnStart = box.row;
-        let rowEnd = parseInt(box.col) + 1;
-        let columnEnd = parseInt(box.row) + 1;
+      return new Promise(resolve => {
+        let html = "";
+        this.boxes.forEach(function (box) {
+          let rowStart = box.col;
+          let columnStart = box.row;
+          let rowEnd = parseInt(box.col) + 1;
+          let columnEnd = parseInt(box.row) + 1;
 
-        html += "<div id='box" + box.id + "' class='box " + box.team + "' style='grid-area: " + columnStart + " / " + rowStart + " / " + columnEnd + " / " + rowEnd + "'></div>"
+          html += "<div id='box" + box.id + "' class='box " + box.team + "' style='grid-area: " + columnStart + " / " + rowStart + " / " + columnEnd + " / " + rowEnd + "'></div>"
+        })
+
+        this.htmlPlayground = html;
+        resolve()
       })
 
-      this.htmlPlayground = html;
     },
     replaceElementInTab(boxCircle: (any)[]) {
       boxCircle.forEach((item) => {
@@ -114,7 +118,7 @@ export default {
         }
       })
     },
-    launchGame() {
+    async launchGame() {
       const teams = ["Yellow", "Green", "Red", "Blue"]
       teams.sort(() => 0.5 - Math.random());
 
@@ -128,11 +132,12 @@ export default {
       boxDownLeft.team = teams[2];
       boxDownRight.team = teams[3];
 
-      this.generateGrid()
+      await this.generateGrid()
       this.initializeVelocity(teams);
       this.initializeFood(teams);
 
-      this.play();
+      await this.play()
+
     },
     specialPower(team) {
       if (team === "Yellow") {
@@ -160,7 +165,7 @@ export default {
         let boxesAround = this.boxesAround(randomBox.col, randomBox.row, 2)
         const boxCircle = [
           randomBox,
-            ...boxesAround
+          ...boxesAround
         ]
 
         this.replaceElementInTab(boxCircle);
@@ -176,12 +181,12 @@ export default {
       return arr[randomIndex];
     },
     /** Find the correct box with coordinates, returns an object */
-    findBoxObject(col, row) : object {
+    findBoxObject(col, row): object {
       return this.boxes.find(el => el.col === col && el.row === row)
     },
     /** Find the correct boxes with the color, returns an array of objects */
-    findBoxesColor(team) : object[] {
-      return this.boxes.filter(el => el.team === team )
+    findBoxesColor(team): object[] {
+      return this.boxes.filter(el => el.team === team)
     },
     initializeVelocity(teams: string[]) {
       teams.forEach((team) => this.teamVelocity[team] = 0)
@@ -204,7 +209,7 @@ export default {
             return el.col === col - 1 && el.row === row
           }),
           this.boxes.find((el) => {
-            return el.col === col  && el.row === row - 1
+            return el.col === col && el.row === row - 1
           }),
         ]
       } else if (radius === 2) {
@@ -250,17 +255,28 @@ export default {
 
       return boxesAround;
     },
-    boxesAroundWithoutThisColor(col, row, team): object[]{
+    boxesAroundWithoutThisColor(col, row, team): object[] {
       return this.boxesAround(col, row, 1).filter(el => el !== undefined && el.team !== team)
     },
     attack(attacker, defender) {
-      let htmlDefender = $("#box" + defender.id);
-      htmlDefender.css("animation", "pulsate-" + attacker.team + " 1.5s infinite alternate")
-      htmlDefender.css("z-index", "9999")
+      return new Promise(resolve => {
+        let htmlDefender = $("#box" + defender.id);
+        htmlDefender.css("animation", "pulsate-" + attacker.team + " 1.5s infinite alternate")
+        htmlDefender.css("z-index", "9999")
 
-      console.log(htmlDefender)
+        setTimeout(() => {
+          htmlDefender.css("animation", "none")
+          htmlDefender.css("z-index", "initial")
+          htmlDefender.css("background-color", correspondenceTeamColor[attacker.team])
+          this.findBoxObject(defender.col, defender.row).team = attacker.team
+
+          resolve()
+        }, 1000)
+
+      })
+
     },
-    play() {
+    async play() {
       //
       // KNOW WHICH TEAM WILL PLAY IN WHICH ORDER
       //
@@ -290,25 +306,40 @@ export default {
           })
         }
 
-        //
-        // DO ACTIONS TEAMS NEED TO DO
-        //
-
-        this.pile.forEach((teamObject) => {
-          const boxes = this.findBoxesColor(teamObject.team)
-
-          boxes.forEach((box: object) => {
-            const boxesAround = this.boxesAroundWithoutThisColor(box.col, box.row, teamObject.team)
-
-            let randomBox = this.getRandomItem(boxesAround);
-
-            this.attack(box, randomBox)
-          })
-        })
-
         this.year += 1;
       }
+      //
+      // DO ACTIONS TEAMS NEED TO DO
+      //
 
+      for (const teamObject of this.pile) {
+        const index = this.pile.indexOf(teamObject);
+
+        const boxes = this.findBoxesColor(teamObject.team)
+
+        for (const box of boxes) {
+          const boxesAround = this.boxesAroundWithoutThisColor(box.col, box.row, teamObject.team)
+
+          if (boxesAround.length > 0) {
+            let randomBox = this.getRandomItem(boxesAround);
+
+            await this.attack(box, randomBox)
+          }
+
+          this.pile.splice(index, 1)
+          console.log(this.pile)
+        }
+
+      }
+
+      await this.generateGrid()
+      this.turnCount += 1;
+
+      setTimeout(() => {
+        if (this.turnCount < 10) {
+          this.play()
+        }
+      }, 0)
     }
   }, created() {
     this.generateProps()
@@ -354,108 +385,100 @@ export default {
 @keyframes pulsate-Yellow {
   100% {
     /* Larger blur radius */
-    box-shadow:
-        0 0 4px #fff,
-        0 0 11px #fff,
-        0 0 19px #fff,
-        0 0 40px #ffd500,
-        0 0 80px #ffd500,
-        0 0 90px #ffd500,
-        0 0 100px #ffd500,
-        0 0 150px #ffd500;
+    box-shadow: 0 0 4px #fff,
+    0 0 11px #fff,
+    0 0 19px #fff,
+    0 0 40px #ffd500,
+    0 0 80px #ffd500,
+    0 0 90px #ffd500,
+    0 0 100px #ffd500,
+    0 0 150px #ffd500;
   }
   0% {
     /* Smaller blur radius */
-    box-shadow:
-        0 0 2px #fff,
-        0 0 4px #fff,
-        0 0 6px #fff,
-        0 0 10px #ffd500,
-        0 0 45px #ffd500,
-        0 0 55px #ffd500,
-        0 0 70px #ffd500,
-        0 0 80px #ffd500;
+    box-shadow: 0 0 2px #fff,
+    0 0 4px #fff,
+    0 0 6px #fff,
+    0 0 10px #ffd500,
+    0 0 45px #ffd500,
+    0 0 55px #ffd500,
+    0 0 70px #ffd500,
+    0 0 80px #ffd500;
   }
 }
 
 @keyframes pulsate-Red {
   100% {
     /* Larger blur radius */
-    box-shadow:
-        0 0 4px #fff,
-        0 0 11px #fff,
-        0 0 19px #fff,
-        0 0 40px #c30000,
-        0 0 80px #c30000,
-        0 0 90px #c30000,
-        0 0 100px #c30000,
-        0 0 150px #c30000;
+    box-shadow: 0 0 4px #fff,
+    0 0 11px #fff,
+    0 0 19px #fff,
+    0 0 40px #c30000,
+    0 0 80px #c30000,
+    0 0 90px #c30000,
+    0 0 100px #c30000,
+    0 0 150px #c30000;
   }
   0% {
     /* Smaller blur radius */
-    box-shadow:
-        0 0 2px #fff,
-        0 0 4px #fff,
-        0 0 6px #fff,
-        0 0 10px #c30000,
-        0 0 45px #c30000,
-        0 0 55px #c30000,
-        0 0 70px #c30000,
-        0 0 80px #c30000;
+    box-shadow: 0 0 2px #fff,
+    0 0 4px #fff,
+    0 0 6px #fff,
+    0 0 10px #c30000,
+    0 0 45px #c30000,
+    0 0 55px #c30000,
+    0 0 70px #c30000,
+    0 0 80px #c30000;
   }
 }
 
 @keyframes pulsate-Blue {
   100% {
     /* Larger blur radius */
-    box-shadow:
-        0 0 4px #fff,
-        0 0 11px #fff,
-        0 0 19px #fff,
-        0 0 40px #0077ff,
-        0 0 80px #0077ff,
-        0 0 90px #0077ff,
-        0 0 100px #0077ff,
-        0 0 150px #0077ff;
+    box-shadow: 0 0 4px #fff,
+    0 0 11px #fff,
+    0 0 19px #fff,
+    0 0 40px #0077ff,
+    0 0 80px #0077ff,
+    0 0 90px #0077ff,
+    0 0 100px #0077ff,
+    0 0 150px #0077ff;
   }
   0% {
     /* Smaller blur radius */
-    box-shadow:
-        0 0 2px #fff,
-        0 0 4px #fff,
-        0 0 6px #fff,
-        0 0 10px #0077ff,
-        0 0 45px #0077ff,
-        0 0 55px #0077ff,
-        0 0 70px #0077ff,
-        0 0 80px #0077ff;
+    box-shadow: 0 0 2px #fff,
+    0 0 4px #fff,
+    0 0 6px #fff,
+    0 0 10px #0077ff,
+    0 0 45px #0077ff,
+    0 0 55px #0077ff,
+    0 0 70px #0077ff,
+    0 0 80px #0077ff;
   }
 }
 
 @keyframes pulsate-Green {
   100% {
     /* Larger blur radius */
-    box-shadow:
-        0 0 4px #fff,
-        0 0 11px #fff,
-        0 0 19px #fff,
-        0 0 40px #1bab1b,
-        0 0 80px #1bab1b,
-        0 0 90px #1bab1b,
-        0 0 100px #1bab1b,
-        0 0 150px #1bab1b;
+    box-shadow: 0 0 4px #fff,
+    0 0 11px #fff,
+    0 0 19px #fff,
+    0 0 40px #1bab1b,
+    0 0 80px #1bab1b,
+    0 0 90px #1bab1b,
+    0 0 100px #1bab1b,
+    0 0 150px #1bab1b;
   }
   0% {
     /* Smaller blur radius */
-    box-shadow:
-        0 0 2px #fff,
-        0 0 4px #fff,
-        0 0 6px #fff,
-        0 0 10px #1bab1b,
-        0 0 45px #1bab1b,
-        0 0 55px #1bab1b,
-        0 0 70px #1bab1b,
-        0 0 80px #1bab1b;
+    box-shadow: 0 0 2px #fff,
+    0 0 4px #fff,
+    0 0 6px #fff,
+    0 0 10px #1bab1b,
+    0 0 45px #1bab1b,
+    0 0 55px #1bab1b,
+    0 0 70px #1bab1b,
+    0 0 80px #1bab1b;
   }
 }
 
