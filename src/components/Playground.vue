@@ -56,7 +56,7 @@ const statistics = {
 */
 
 function mapIncrementOnObject(object) {
-  Object.keys(object).forEach(function (key, index) {
+  Object.keys(object).forEach(function (key) {
     object[key] += statistics[key].Speed;
   });
 }
@@ -288,7 +288,7 @@ export default {
         mapIncrementOnObject(this.teamVelocity)
 
         // Now we check if some team have 100 velocity or more, and we had a "turn" on the pile
-        const filteredVelocity = Object.keys(this.teamVelocity).filter((key, index) => {
+        const filteredVelocity = Object.keys(this.teamVelocity).filter((key) => {
           return this.teamVelocity[key] >= 100
         });
 
