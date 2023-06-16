@@ -276,6 +276,31 @@ export default {
       })
 
     },
+    async playThePile() {
+      return new Promise(async resolve => {
+        for (const teamObject of this.pile) {
+          const index = this.pile.indexOf(teamObject);
+
+          const boxes = this.findBoxesColor(teamObject.team)
+
+          for (const box of boxes) {
+            const boxesAround = this.boxesAroundWithoutThisColor(box.col, box.row, teamObject.team)
+
+            if (boxesAround.length > 0) {
+              let randomBox = this.getRandomItem(boxesAround);
+
+              await this.attack(box, randomBox)
+            }
+
+            this.pile.splice(index, 1)
+            console.log(JSON.stringify(this.pile))
+          }
+        }
+
+        resolve()
+      })
+
+    },
     async play() {
       //
       // KNOW WHICH TEAM WILL PLAY IN WHICH ORDER
@@ -312,25 +337,7 @@ export default {
       // DO ACTIONS TEAMS NEED TO DO
       //
 
-      for (const teamObject of this.pile) {
-        const index = this.pile.indexOf(teamObject);
-
-        const boxes = this.findBoxesColor(teamObject.team)
-
-        for (const box of boxes) {
-          const boxesAround = this.boxesAroundWithoutThisColor(box.col, box.row, teamObject.team)
-
-          if (boxesAround.length > 0) {
-            let randomBox = this.getRandomItem(boxesAround);
-
-            await this.attack(box, randomBox)
-          }
-
-          this.pile.splice(index, 1)
-          console.log(this.pile)
-        }
-
-      }
+      await this.playThePile()
 
       await this.generateGrid()
       this.turnCount += 1;
@@ -341,11 +348,11 @@ export default {
         }
       }, 0)
     }
-  }, created() {
+  },
+  created() {
     this.generateProps()
     this.generateGrid();
   },
-
   computed: {
     playgroundStyle() {
       return {
