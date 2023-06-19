@@ -260,6 +260,11 @@ export default {
     },
     attack(attacker, defender) {
       return new Promise(resolve => {
+        if (defender.team === "Neutral") {
+
+        } else {
+
+        }
         let htmlDefender = $("#box" + defender.id);
         htmlDefender.css("animation", "pulsate-" + attacker.team + " 1.5s infinite alternate")
         htmlDefender.css("z-index", "9999")
@@ -272,15 +277,11 @@ export default {
 
           resolve()
         }, 1000)
-
       })
-
     },
     async playThePile() {
       return new Promise(async resolve => {
         for (const teamObject of this.pile) {
-          const index = this.pile.indexOf(teamObject);
-
           const boxes = this.findBoxesColor(teamObject.team)
 
           for (const box of boxes) {
@@ -291,12 +292,9 @@ export default {
 
               await this.attack(box, randomBox)
             }
-
-            this.pile.splice(index, 1)
-            console.log(JSON.stringify(this.pile))
           }
         }
-
+        this.pile = [];
         resolve()
       })
 
@@ -342,11 +340,11 @@ export default {
       await this.generateGrid()
       this.turnCount += 1;
 
-      setTimeout(() => {
+      setTimeout(async () => {
         if (this.turnCount < 10) {
-          this.play()
+          await this.play()
         }
-      }, 0)
+      }, 5000)
     }
   },
   created() {
