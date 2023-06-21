@@ -1,50 +1,72 @@
-<script lang="ts">
+<script lang='ts'>
 
 import $ from 'jquery'
 
 const arrWidth = [3, 4, 5, 6, 7, 8]
-const gameWidth = 12;
-const gameHeight = 12;
-const numberOfTeam = 4;
-const gameSpeed = 1;
+const gameWidth = 6
+const gameHeight = 6
+const numberOfTeam = 4
+const baseProbabilitieNeutral = 90
+const baseProbabilitieTeam = 50
+const gameSpeed = 1
 
 const correspondenceTeamColor = {
-  "Yellow": "#ffd500",
-  "Blue": "#0077ff",
-  "Red": "#c30000",
-  "Green": "#1bab1b",
-  "Neutral": "#d5d5d5"
+  'Yellow': '#ffd500',
+  'Blue': '#0077ff',
+  'Red': '#c30000',
+  'Green': '#1bab1b',
+  'Neutral': '#d5d5d5'
 }
 
 const statistics = {
-  "Green": {
-    "Attack": 50,
-    "Defense": 20,
-    "Food": 10,
-    "Counter": 80,
-    "Speed": 70,
+  'Neutral': {
+    'Attack': 0,
+    'Defense': 0,
+    'Food': 0,
+    'Counter': 0,
+    'Speed': 0,
+    'BP': baseProbabilitieNeutral
   },
-  "Red": {
-    "Attack": 80,
-    "Defense": 50,
-    "Food": 20,
-    "Counter": 20,
-    "Speed": 40,
+  'PowerUp': {
+    'Attack': 0,
+    'Defense': 0,
+    'Food': 0,
+    'Counter': 0,
+    'Speed': 0,
+    'BP': baseProbabilitieNeutral
   },
-  "Blue": {
-    "Attack": 40,
-    "Defense": 80,
-    "Food": 20,
-    "Counter": 70,
-    "Speed": 40,
+  'Green': {
+    'Attack': 50,
+    'Defense': 20,
+    'Food': 5,
+    'Counter': 80,
+    'Speed': 70,
+    'BP': baseProbabilitieTeam
   },
-  "Yellow": {
-    "Attack": 60,
-    "Defense": 60,
-    "Food": 15,
-    "Counter": 40,
-    "Speed": 50,
+  'Red': {
+    'Attack': 80,
+    'Defense': 50,
+    'Food': 10,
+    'Counter': 20,
+    'Speed': 40,
+    'BP': baseProbabilitieTeam
   },
+  'Blue': {
+    'Attack': 40,
+    'Defense': 80,
+    'Food': 10,
+    'Counter': 70,
+    'Speed': 40,
+    'BP': baseProbabilitieTeam
+  },
+  'Yellow': {
+    'Attack': 60,
+    'Defense': 60,
+    'Food': 8,
+    'Counter': 40,
+    'Speed': 50,
+    'BP': baseProbabilitieTeam
+  }
 }
 
 /* Idées pouvoir :
@@ -56,9 +78,9 @@ const statistics = {
 */
 
 function mapIncrementOnObject(object) {
-  Object.keys(object).forEach(function (key) {
-    object[key] += statistics[key].Speed;
-  });
+  Object.keys(object).forEach(function(key) {
+    object[key] += statistics[key].Speed
+  })
 }
 
 export default {
@@ -66,43 +88,44 @@ export default {
   data() {
     return {
       boxes: [],
-      htmlPlayground: "",
+      htmlPlayground: '',
       teamVelocity: {},
       teamFood: {},
       pile: [],
       year: 0,
       turnCount: 0,
       waitingThread: [],
+      teams: []
     }
   },
   methods: {
     generateProps() {
-      let k = 1;
+      let k = 1
       for (let i = 1; i < gameWidth + 1; i++) {
         for (let j = 1; j < gameHeight + 1; j++) {
           this.boxes.push({
-            "row": i,
-            "col": j,
-            "team": "Neutral",
-            "id": k,
+            'row': i,
+            'col': j,
+            'team': 'Neutral',
+            'id': k
           })
-          k++;
+          k++
         }
       }
     },
     generateGrid() {
       return new Promise(resolve => {
-        let html = "";
-        this.boxes.forEach(function (box) {
-          let rowStart = box.col;
-          let columnStart = box.row;
-          let rowEnd = parseInt(box.col) + 1;
-          let columnEnd = parseInt(box.row) + 1;
+        let html = ''
+        this.boxes.forEach(function(box) {
+          let rowStart = box.col
+          let columnStart = box.row
+          let rowEnd = parseInt(box.col) + 1
+          let columnEnd = parseInt(box.row) + 1
 
-          html += "<div id='box" + box.id + "' class='box " + box.team + "' style='grid-area: " + columnStart + " / " + rowStart + " / " + columnEnd + " / " + rowEnd + "'></div>"
+          html += '<div id=\'box' + box.id + '\' class=\'box ' + box.team + '\' style=\'grid-area: ' + columnStart + ' / ' + rowStart + ' / ' + columnEnd + ' / ' + rowEnd + '\'></div>'
         })
 
-        this.htmlPlayground = html;
+        this.htmlPlayground = html
         resolve()
       })
 
@@ -111,74 +134,91 @@ export default {
       boxCircle.forEach((item) => {
         if (item !== undefined) {
           const box = item
-          const index = this.boxes.indexOf(this.boxes.find(function (el) {
+          const index = this.boxes.indexOf(this.boxes.find(function(el) {
             return el.col === box.col && el.row === box.row
           }))
-          this.boxes[index] = item;
+          this.boxes[index] = item
         }
       })
     },
     async launchGame() {
-      const teams = ["Yellow", "Green", "Red", "Blue"]
-      teams.sort(() => 0.5 - Math.random());
+      this.teams = ['Yellow', 'Green', 'Red', 'Blue']
+      this.teams.sort(() => 0.5 - Math.random())
 
-      let boxUpLeft = this.findBoxObject(1, 1);
-      let boxUpRight = this.findBoxObject(gameWidth, 1);
-      let boxDownLeft = this.findBoxObject(1, gameHeight);
-      let boxDownRight = this.findBoxObject(gameWidth, gameHeight);
+      let boxUpLeft = this.findBoxObject(1, 1)
+      let boxUpRight = this.findBoxObject(gameWidth, 1)
+      let boxDownLeft = this.findBoxObject(1, gameHeight)
+      let boxDownRight = this.findBoxObject(gameWidth, gameHeight)
 
-      boxUpLeft.team = teams[0];
-      boxUpRight.team = teams[1];
-      boxDownLeft.team = teams[2];
-      boxDownRight.team = teams[3];
+      boxUpLeft.team = this.teams[0]
+      boxUpRight.team = this.teams[1]
+      boxDownLeft.team = this.teams[2]
+      boxDownRight.team = this.teams[3]
+
+      let powerUp = this.getRandomItem(this.boxes.filter(el => el.col !== 1 && el.row !== 4 && el.col !== gameWidth && el.row !== gameHeight))
+      powerUp.team = 'PowerUp'
+      this.replaceElementInTab([powerUp])
 
       await this.generateGrid()
-      this.initializeVelocity(teams);
-      this.initializeFood(teams);
+      this.initializeVelocity(this.teams)
+      this.initializeFood(this.teams)
 
       await this.play()
 
     },
     specialPower(team) {
-      if (team === "Yellow") {
-        const randomLine = this.getRandomItem(arrWidth);
-        const randomColumn = this.getRandomItem(arrWidth);
+      return new Promise(async resolve => {
+        if (team === 'Yellow') {
+          const randomLine = this.getRandomItem(arrWidth)
+          const randomColumn = this.getRandomItem(arrWidth)
 
-        if (Math.floor(Math.random() * 2) === 1) {
-          this.boxes.filter((el) => {
-            return el.col === randomColumn
-          }).forEach((box) => {
-            box.team = "Yellow"
+          if (Math.floor(Math.random() * 2) === 1) {
+            this.boxes.filter((el) => {
+              return el.col === randomColumn
+            }).forEach((box) => {
+              box.team = 'Yellow'
+            })
+          } else {
+            this.boxes.filter((el) => {
+              return el.row === randomLine
+            }).forEach((box) => {
+              box.team = 'Yellow'
+            })
+          }
+
+        } else if (team === 'Red') {
+          const randomBox = this.getRandomItem(this.boxes.filter((el) => {
+            return el.team !== team
+          }))
+          let boxesAround = this.boxesAround(randomBox.col, randomBox.row, 2)
+          const boxCircle = [
+            randomBox,
+            ...boxesAround
+          ]
+
+          this.replaceElementInTab(boxCircle)
+
+          boxCircle.forEach((box) => {
+            if (box !== undefined) box.team = 'Red'
           })
-        } else {
-          this.boxes.filter((el) => {
-            return el.row === randomLine
-          }).forEach((box) => {
-            box.team = "Yellow"
-          })
+
+        } else if (team === 'Green') {
+          console.log(JSON.stringify(this.pile))
+          this.pile.push({ 'team': 'Green' }, { 'team': 'Green' })
+          console.log(JSON.stringify(this.pile))
+          let baseAttack = statistics['Green'].Attack
+          statistics['Green'].Attack = 90
+          await this.playThePile()
+          statistics['Green'].Attack = baseAttack
         }
 
-      } else if (team === "Red") {
-        const randomBox = this.getRandomItem(this.boxes.filter((el) => {
-          return el.team !== team
-        }))
-        let boxesAround = this.boxesAround(randomBox.col, randomBox.row, 2)
-        const boxCircle = [
-          randomBox,
-          ...boxesAround
-        ]
+        resolve()
+      })
 
-        this.replaceElementInTab(boxCircle);
-
-        boxCircle.forEach((box) => {
-          if (box !== undefined) box.team = "Red"
-        })
-
-      }
     },
     getRandomItem(arr) {
-      const randomIndex = Math.floor(Math.random() * arr.length);
-      return arr[randomIndex];
+      const randomIndex = Math.floor(Math.random() * arr.length)
+      return arr[randomIndex]
     },
     /** Find the correct box with coordinates, returns an object */
     findBoxObject(col, row): object {
@@ -192,9 +232,9 @@ export default {
       teams.forEach((team) => this.teamVelocity[team] = 0)
     },
     initializeFood(teams: string[]) {
-      teams.forEach((team) => this.teamVelocity[team] = 100)
+      teams.forEach((team) => this.teamFood[team] = 100)
     },
-    boxesAround(col, row, radius): object[] {
+    boxesAround(col, row, radius): (object | undefined)[] {
       let boxesAround = []
 
       if (radius === 1) {
@@ -210,7 +250,7 @@ export default {
           }),
           this.boxes.find((el) => {
             return el.col === col && el.row === row - 1
-          }),
+          })
         ]
       } else if (radius === 2) {
         boxesAround = [
@@ -249,52 +289,93 @@ export default {
           }),
           this.boxes.find((el) => {
             return el.col === col - 2 && el.row === row
-          }),
+          })
         ]
       }
 
-      return boxesAround;
+      return boxesAround
     },
     boxesAroundWithoutThisColor(col, row, team): object[] {
       return this.boxesAround(col, row, 1).filter(el => el !== undefined && el.team !== team)
     },
-    attack(attacker, defender) {
+    attack(attacker: object, defender: object) {
       return new Promise(resolve => {
-        if (defender.team === "Neutral") {
-
-        } else {
-
+        if (defender.team === 'PowerUp') {
+          this.pile.push({
+            'team': 'PowerUp',
+            'caster': attacker.team
+          })
         }
-        let htmlDefender = $("#box" + defender.id);
-        htmlDefender.css("animation", "pulsate-" + attacker.team + " 1.5s infinite alternate")
-        htmlDefender.css("z-index", "9999")
 
-        setTimeout(() => {
-          htmlDefender.css("animation", "none")
-          htmlDefender.css("z-index", "initial")
-          htmlDefender.css("background-color", correspondenceTeamColor[attacker.team])
-          this.findBoxObject(defender.col, defender.row).team = attacker.team
+        let success = this.boolOnProbabilitie(statistics[defender.team].BP, statistics[attacker.team], statistics[defender.team])
+        let foodAttack = statistics[attacker.team].Food
+        let htmlDefender = $('#box' + defender.id)
+        htmlDefender.css('animation', 'pulsate-' + attacker.team + ' 1.5s infinite alternate')
+        htmlDefender.css('z-index', '9999')
 
-          resolve()
-        }, 1000)
+        if (success) {
+          // ATTACK SUCCESSFUL
+          this.teamFood[attacker.team] -= foodAttack
+          setTimeout(() => {
+            htmlDefender.css('animation', 'none')
+            htmlDefender.css('z-index', 'initial')
+            htmlDefender.css('background-color', correspondenceTeamColor[attacker.team])
+            this.findBoxObject(defender.col, defender.row).team = attacker.team
+
+            resolve()
+          }, 1000)
+        } else {
+          // ATTACK FAILED
+          setTimeout(() => {
+            this.teamFood[attacker.team] -= Math.floor(foodAttack / 2)
+            htmlDefender.css('animation', 'none')
+            htmlDefender.css('z-index', 'initial')
+            if (this.teamFood[defender.team] < statistics[defender.team].Food) {
+              let htmlAttacker = $('#box' + attacker.id)
+              htmlAttacker.css('animation', 'pulsate-' + defender.team + ' 1.5s infinite alternate')
+              htmlAttacker.css('z-index', '9999')
+
+              if ((statistics[defender.team].Counter / 100) - Math.random() > 0) {
+                // COUNTER SUCCESSFUL
+                this.teamFood[defender.team] -= Math.floor(statistics[defender.team].Food / 2)
+                htmlAttacker.css('background-color', correspondenceTeamColor[defender.team])
+                this.findBoxObject(attacker.col, attacker.row).team = defender.team
+              } else {
+                // COUNTER FAILED
+                htmlAttacker.css('animation', 'none')
+                htmlAttacker.css('z-index', 'initial')
+              }
+            }
+
+            resolve()
+          }, 1000)
+        }
+
+
       })
     },
     async playThePile() {
       return new Promise(async resolve => {
         for (const teamObject of this.pile) {
-          const boxes = this.findBoxesColor(teamObject.team)
+          if (teamObject.team !== 'PowerUp') {
+            const boxes = this.findBoxesColor(teamObject.team)
 
-          for (const box of boxes) {
-            const boxesAround = this.boxesAroundWithoutThisColor(box.col, box.row, teamObject.team)
+            for (const box of boxes) {
+              if (this.teamFood[box.team] >= statistics[box.team].Food) {
+                const boxesAround = this.boxesAroundWithoutThisColor(box.col, box.row, teamObject.team)
 
-            if (boxesAround.length > 0) {
-              let randomBox = this.getRandomItem(boxesAround);
-
-              await this.attack(box, randomBox)
+                if (boxesAround.length > 0) {
+                  let randomBox = this.getRandomItem(boxesAround)
+                  await this.attack(box, randomBox)
+                }
+              }
             }
+          } else {
+            await this.specialPower(teamObject.caster)
           }
         }
-        this.pile = [];
+
+        this.pile = []
         resolve()
       })
 
@@ -305,7 +386,7 @@ export default {
       //
 
       // We create a temporary array to make sure all team plays during  a turn
-      let uniqueTeam = [];
+      let uniqueTeam = []
       while (uniqueTeam.length !== numberOfTeam) {
         // Function to add speed to velocity meter
         mapIncrementOnObject(this.teamVelocity)
@@ -313,7 +394,7 @@ export default {
         // Now we check if some team have 100 velocity or more, and we had a "turn" on the pile
         const filteredVelocity = Object.keys(this.teamVelocity).filter((key) => {
           return this.teamVelocity[key] >= 100
-        });
+        })
 
         if (filteredVelocity.length > 0) {
           filteredVelocity.sort((a, b) => {
@@ -323,13 +404,13 @@ export default {
             }
             return this.teamVelocity[b] - this.teamVelocity[a]
           }).forEach(team => {
-            this.pile.push({"team": team});
-            (uniqueTeam.indexOf(team) === -1) ? uniqueTeam.push(team) : false;
-            this.teamVelocity[team] -= 100;
+            this.pile.push({ 'team': team });
+            (uniqueTeam.indexOf(team) === -1) ? uniqueTeam.push(team) : false
+            this.teamVelocity[team] -= 100
           })
         }
 
-        this.year += 1;
+        this.year += 1
       }
       //
       // DO ACTIONS TEAMS NEED TO DO
@@ -338,24 +419,38 @@ export default {
       await this.playThePile()
 
       await this.generateGrid()
-      this.turnCount += 1;
+      await this.harvest()
+      this.turnCount += 1
 
       setTimeout(async () => {
         if (this.turnCount < 10) {
           await this.play()
         }
-      }, 5000)
+      }, 1000)
+    },
+    boolOnProbabilitie(baseProbabilitie: number, attacker: object, defender: object) {
+      let probabilitie = (baseProbabilitie * (1 + (attacker.Attack / 100))) * (1 - (defender.Defense / 100))
+      return (probabilitie / 100) - Math.random() >= 0
+    },
+    harvest() {
+      return new Promise(resolve => {
+        this.teams.forEach((team) => {
+          this.teamFood[team] += this.findBoxesColor(team).length
+        })
+
+        resolve()
+      })
     }
   },
   created() {
     this.generateProps()
-    this.generateGrid();
+    this.generateGrid()
   },
   computed: {
     playgroundStyle() {
       return {
-        "grid-template-rows": "repeat(" + gameHeight + ", 1fr)",
-        "grid-template-columns": "repeat(" + gameWidth + ", 1fr)"
+        'grid-template-rows': 'repeat(' + gameHeight + ', 1fr)',
+        'grid-template-columns': 'repeat(' + gameWidth + ', 1fr)'
       }
     }
   }
@@ -363,12 +458,12 @@ export default {
 </script>
 
 <template>
-  <div id="container">
-    <div :style="playgroundStyle" id="playground" v-html="htmlPlayground"></div>
-    <div id="commands">
+  <div id='container'>
+    <div :style='playgroundStyle' id='playground' v-html='htmlPlayground'></div>
+    <div id='commands'>
       <div>Turn : {{ turnCount }}</div>
       <div>Year : {{ year }}</div>
-      <div @click="launchGame">declare a war</div>
+      <div @click='launchGame'>declare a war</div>
     </div>
   </div>
 </template>
@@ -509,5 +604,12 @@ export default {
 
 .Green {
   background-color: #1bab1b;
+}
+
+.PowerUp {
+  border: 5px solid transparent;
+  border-image: linear-gradient(to bottom right, #b827fc 0%, #2c90fc 25%, #b8fd33 50%, #fec837 75%, #fd1892 100%);
+  border-image-slice: 1;
+  background-color: #ededed;
 }
 </style>
